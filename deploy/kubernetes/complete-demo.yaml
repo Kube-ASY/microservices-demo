@@ -86,8 +86,6 @@ spec:
          - name: JAVA_OPTS
            value: -Xms64m -Xmx128m -XX:PermSize=32m -XX:MaxPermSize=64m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
           capabilities:
             drop:
               - all
@@ -181,8 +179,6 @@ spec:
         ports:
         - containerPort: 80
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
           capabilities:
             drop:
               - all
@@ -227,8 +223,6 @@ spec:
         ports:
         - containerPort: 8079
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
           capabilities:
             drop:
               - all
@@ -327,8 +321,6 @@ spec:
         ports:
         - containerPort: 80
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
           capabilities:
             drop:
               - all
@@ -381,8 +373,6 @@ spec:
         - name: ZIPKIN
           value: http://zipkin.zipkin.svc.cluster.local:9411/api/v1/spans
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
           capabilities:
             drop:
               - all
@@ -512,117 +502,6 @@ spec:
         ports:
         - containerPort: 80
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          capabilities:
-            drop:
-              - all
-            add:
-              - NET_BIND_SERVICE
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp-volume
-      volumes:
-        - name: tmp-volume
-          emptyDir:
-            medium: Memory
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: shipping
-  labels:
-    name: shipping
-  namespace: sock-shop
-spec:
-  ports:
-    # the port that this service should serve on
-  - port: 80
-    targetPort: 80
-  selector:
-    name: shipping
----
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: user-db
-  labels:
-    name: user-db
-  namespace: sock-shop
-spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        name: user-db
-    spec:
-      containers:
-      - name: user-db
-        image: weaveworksdemos/user-db:0.4.0
-        ports:
-        - name: mongo
-          containerPort: 27017
-        securityContext:
-          capabilities:
-            drop:
-              - all
-            add:
-              - CHOWN
-              - SETGID
-              - SETUID
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /tmp
-          name: tmp-volume
-      volumes:
-        - name: tmp-volume
-          emptyDir:
-            medium: Memory
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: user-db
-  labels:
-    name: user-db
-  namespace: sock-shop
-spec:
-  ports:
-    # the port that this service should serve on
-  - port: 27017
-    targetPort: 27017
-  selector:
-    name: user-db
----
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: user
-  labels:
-    name: user
-  namespace: sock-shop
-spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        name: user
-    spec:
-      containers:
-      - name: user
-        image: weaveworksdemos/user:0.4.4
-        ports:
-        - containerPort: 80
-        env:
-        - name: MONGO_HOST
-          value: user-db:27017
-        - name: ZIPKIN
-          value: http://zipkin.zipkin.svc.cluster.local:9411/api/v1/spans
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
           capabilities:
             drop:
               - all
